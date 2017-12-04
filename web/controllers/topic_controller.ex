@@ -3,12 +3,11 @@ defmodule Discuss.TopicController do
 
     alias Discuss.Topic
 
+    plug Discuss.Plugs.RequireAuth when action in [:new, :create, :edit, :update, :delete]
+    plug :checkTopicOwner when action in [:edit, :update, :delete]
+
     def index(conn, _params) do
         topics = Repo.all(Topic)
-
-        IO.inspect("---CONN!------------------------------------------------")
-        IO.inspect(conn.assigns)
-        IO.inspect("---CONN!------------------------------------------------")
 
         render conn, "index.html", topics: topics
     end
@@ -20,7 +19,9 @@ defmodule Discuss.TopicController do
     end
 
     def create(conn, %{"topic" => topic}) do
-        changeset = Topic.changeset(%Topic{}, topic)
+        changeset = conn.assigns.user
+            |> build_assoc(:topics)
+            |> Topic.changeset(topic)
 
         case Repo.insert(changeset) do
             {:ok, _topic} ->
@@ -32,6 +33,7 @@ defmodule Discuss.TopicController do
     end
 
     def edit(conn, %{"id" => topicId}) do
+        
         topic = Repo.get(Topic, topicId)
 
         changeset = Topic.changeset(topic)
@@ -61,5 +63,18 @@ defmodule Discuss.TopicController do
         conn
             |> put_flash(:info, "Topic Deleted")
             |> redirect(to: topic_path(conn, :index))
+    end
+
+    def checkTopicOwner(conn, _params) do
+        %{params: %{"id" => topicId}} = conn
+
+        if Repo.get(Topic, topicId)."UserId" == conn.assigns.user.id do
+            conn
+        else
+            conn
+                |> put_flash(:error, "That topic does not belong to you!")
+                |> redirect(to: topic_path(conn, :index))
+                |> halt()
+        end
     end
 end
