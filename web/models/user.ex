@@ -6,6 +6,7 @@ defmodule Discuss.User do
         field :provider, :string
         field :token, :string
         has_many :topics, Discuss.Topic, foreign_key: :UserId
+        has_many :comments, Discuss.Comment, foreign_key: :userId
 
         timestamps()
     end

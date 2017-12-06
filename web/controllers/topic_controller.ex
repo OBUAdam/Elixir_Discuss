@@ -77,4 +77,13 @@ defmodule Discuss.TopicController do
                 |> halt()
         end
     end
+
+    def show(conn, %{"id" => topicId}) do
+        
+        topic = Repo.get!(Topic, topicId)
+
+        changeset = Topic.changeset(topic)
+
+        render conn, "show.html", changeset: changeset, topic: topic
+    end
 end
